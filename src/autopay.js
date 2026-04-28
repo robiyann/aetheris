@@ -248,6 +248,7 @@ class ChatGPTAutopay {
     this.webhookAction = a.webhookAction || 'reset-link';
     this.skipOtp = a.skipOtp || ![];
     this.skipLogin = a.skipLogin || ![];
+    this.earlyReleaseFn = a.earlyReleaseFn || null;
 
     // Sticky session proxy for DataImpulse (unik per task, mencegah shared connection)
     const sessionToken = this.sessionId.substring(0, 8);
@@ -2034,6 +2035,12 @@ class ChatGPTAutopay {
         await sleep(0x2710);
         logger.info(this.tag + "Cek penyelesaian...");
         await this.checkTransactionStatus();
+
+        if (typeof this.earlyReleaseFn === 'function') {
+           logger.info(this.tag + "Pembayaran selesai, merilis slot GoPay lebih awal untuk di-reset...");
+           await this.earlyReleaseFn();
+        }
+
         logger.info(this.tag + "Verifikasi checkout...");
         await this.verifyCheckout();
         // WorkerPool / index.js yang memanggil bot ini PASTI akan melakukan releaseGopaySlot()

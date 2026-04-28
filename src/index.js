@@ -209,7 +209,13 @@ async function handleAccountTask(task) {
                     threadId, sharedCycleTLS: localCycleTLS,
                     accessToken: acc.accessToken,
                     skipLogin: true,
-                    otpFn: otpFnProxy
+                    otpFn: otpFnProxy,
+                    earlyReleaseFn: async () => {
+                        if (activeSlot) {
+                            await releaseGopaySlot(otpServerUrl, activeSlot.id).catch(() => {});
+                            activeSlot = null; // Prevent double release
+                        }
+                    }
                 });
 
                 telegramHandler.updateStatusFor(chatId, `💳 <b>Retrying Payment...</b>\n<i>Bypassing login via cached token...</i>`);
@@ -288,7 +294,13 @@ async function handleAccountTask(task) {
                         threadId, sharedCycleTLS: localCycleTLS,
                         accessToken: sRes.accessToken,
                         skipLogin: true,
-                        otpFn: otpFnProxy
+                        otpFn: otpFnProxy,
+                        earlyReleaseFn: async () => {
+                            if (activeSlot) {
+                                await releaseGopaySlot(otpServerUrl, activeSlot.id).catch(() => {});
+                                activeSlot = null; // Prevent double release
+                            }
+                        }
                     });
 
                     telegramHandler.updateStatusFor(chatId, `💳 <b>Initiating Payment...</b>\n<i>Processing GoPay transaction...</i>`);
