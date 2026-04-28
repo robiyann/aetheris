@@ -61,12 +61,12 @@ function getUserState(chatId) {
             messageQueue: [],
             isQueueProcessing: false,
             currentTaskInfo: null,
-            batchResults: [], 
+            batchResults: [],
             batchTarget: 0,          // Target number of Plus accounts to create
             batchPlusCount: 0,       // Plus accounts successfully created so far
             batchTotalDispatched: 0, // Total tasks dispatched to queue
             isBatchMode: false,
-            setupStep: null 
+            setupStep: null
         });
     }
     return userStates.get(chatId);
@@ -124,7 +124,7 @@ function getSystemDashboardText() {
     let text = `🖥️ <b>SERVER STATUS DASHBOARD</b>\n`;
     text += `━━━━━━━━━━━━━━━━━━\n`;
     text += `🟢 Active Slots: ${slots.length} / ${process.env.MAX_THREADS || 5}\n\n`;
-    
+
     if (slots.length === 0) {
         text += `<i>Server is fully available.</i>\n`;
     } else {
@@ -135,11 +135,11 @@ function getSystemDashboardText() {
             };
             const modeName = mMap[s.mode] || s.mode.toUpperCase();
             const runTime = Math.floor((Date.now() - s.startTime) / 1000);
-            text += `[${idx+1}] 👤 User ${s.userId.substring(0,4)}... | <code>${s.email || 'AUTO'}</code>\n`;
+            text += `[${idx + 1}] 👤 User ${s.userId.substring(0, 4)}... | <code>${s.email || 'AUTO'}</code>\n`;
             text += `      💎 ${modeName} | ⏱️ ${runTime}s\n`;
         });
     }
-    
+
     text += `━━━━━━━━━━━━━━━━━━\n<i>Updated: ${new Date().toLocaleTimeString()}</i>`;
     return text;
 }
@@ -176,14 +176,14 @@ function initTelegram() {
 
             const chatId = msg.chat.id.toString();
             const text = msg.text ? msg.text.trim() : "";
-            
+
             console.log(chalk.gray(`[Bot] Pesan dari ${chatId}: "${text}"`));
-            
+
             const state = getUserState(chatId);
             state.dashboardObscured = true;
 
             // --- 0. Admin Flow (Approval / Reject) handled in callback_query, but check basic admin status
-            
+
             // --- 1. User Database Guard & Registration
             if (!db.hasUser(chatId)) {
                 if (text.startsWith('/start')) {
@@ -192,7 +192,7 @@ function initTelegram() {
                     if (text.includes('REF_')) {
                         referrerCode = text.split(' ')[1].replace('REF_', '');
                     }
-                    
+
                     db.initUserData(chatId, msg.from.first_name);
 
                     if (referrerCode) {
@@ -200,7 +200,7 @@ function initTelegram() {
                         if (referrer) {
                             db.saveUser(chatId, { referredBy: referrer.id, referralRewarded: true });
                             db.addPoints(referrer.id, 1);
-                            bot.sendMessage(referrer.id, `🎉 <b>New Referral!</b>\nSomeone just registered using your invite link. You received <b>+1 point</b>!`, { parse_mode: 'HTML' }).catch(()=>{});
+                            bot.sendMessage(referrer.id, `🎉 <b>New Referral!</b>\nSomeone just registered using your invite link. You received <b>+1 point</b>!`, { parse_mode: 'HTML' }).catch(() => { });
                         }
                     }
 
@@ -219,31 +219,31 @@ function initTelegram() {
 
             const userData = db.getUser(chatId);
             // User Approved 
-            
+
             // Resolving Prompt manually triggered setup steps
             // Pastikan tombol menu utama TIDAK ikut me-resolve prompt yang sedang menunggu input.
             if (state.activePromptResolve && !MENU_COMMANDS.has(text)) {
                 const resolve = state.activePromptResolve;
                 state.activePromptResolve = null;
-                
+
                 const userMsgId = msg.message_id;
-                
+
                 bot.sendMessage(chatId, `✨ <b>Input Received:</b> <code>${text}</code>`, { parse_mode: "HTML" }).then(sentMsg => {
                     setTimeout(() => {
-                        if (state.lastPromptMessageId) bot.deleteMessage(chatId, state.lastPromptMessageId).catch(() => {});
-                        bot.deleteMessage(chatId, userMsgId).catch(() => {});
-                        bot.deleteMessage(chatId, sentMsg.message_id).catch(() => {});
+                        if (state.lastPromptMessageId) bot.deleteMessage(chatId, state.lastPromptMessageId).catch(() => { });
+                        bot.deleteMessage(chatId, userMsgId).catch(() => { });
+                        bot.deleteMessage(chatId, sentMsg.message_id).catch(() => { });
                         state.dashboardObscured = true;
                     }, 3000);
-                }).catch(() => {});
+                }).catch(() => { });
 
                 resolve(text);
                 return;
             }
-            
+
             // If user presses a menu button while a prompt is active, warn them
             if (state.activePromptResolve && MENU_COMMANDS.has(text)) {
-                bot.sendMessage(chatId, "⚠️ <b>A task is waiting for your input.</b>\n<i>Reply to the question above, or click 🛑 Cancel Session to abort.</i>", { parse_mode: 'HTML' }).catch(() => {});
+                bot.sendMessage(chatId, "⚠️ <b>A task is waiting for your input.</b>\n<i>Reply to the question above, or click 🛑 Cancel Session to abort.</i>", { parse_mode: 'HTML' }).catch(() => { });
                 return;
             }
 
@@ -399,7 +399,7 @@ function initTelegram() {
                 bot.sendMessage(chatId, getSystemDashboardText(), { parse_mode: 'HTML', ...mainMenuKeyboard });
                 return;
             }
-            
+
             if (text === '❓ Help') {
                 bot.sendMessage(chatId, "Welcome to GPT Creator. Use the menu buttons to generate ChatGPT Plus accounts automatically. Configure your preferences and API keys in ⚙️ My Settings first.", mainMenuKeyboard);
                 return;
@@ -408,7 +408,7 @@ function initTelegram() {
             if (text === '👥 Referral' || text === '/referral') {
                 const stats = db.getUserStats(chatId) || { totalReferrals: 0, points: 0, referralCode: 'N/A' };
                 const botUser = await bot.getMe();
-                bot.sendMessage(chatId, 
+                bot.sendMessage(chatId,
                     `🔗 <b>YOUR INVITE LINK</b>\n━━━━━━━━━━━━━━━━━━\n` +
                     `💎 <b>Points Balance:</b> ${stats.points}\n` +
                     `👥 <b>People Invited:</b> ${stats.totalReferrals}\n\n` +
@@ -421,7 +421,7 @@ function initTelegram() {
 
             if (text === '/mystat') {
                 const stats = db.getUserStats(chatId) || { points: 0, totalAccountsCreated: 0, totalPlusCreated: 0, totalReferrals: 0, referralCode: 'N/A' };
-                bot.sendMessage(chatId, 
+                bot.sendMessage(chatId,
                     `📊 <b>YOUR STATS</b>\n━━━━━━━━━━━━━━━━━━\n` +
                     `💎 <b>Points Balance :</b> ${stats.points}\n` +
                     `📧 <b>Accounts Made  :</b> ${stats.totalAccountsCreated}\n` +
@@ -438,7 +438,7 @@ function initTelegram() {
                     bot.sendMessage(chatId, "❌ <b>A task is already running.</b>\nWait for it to complete or cancel first.", { parse_mode: 'HTML', ...mainMenuKeyboard });
                     return;
                 }
-                
+
                 // Point Gate
                 if (!db.hasEnoughPoints(chatId, 4)) {
                     bot.sendMessage(chatId, `❌ <b>Not Enough Points</b>\n━━━━━━━━━━━━━━━━━━\nRequired : 4 points (Full Auto Plus)\nBalance  : ${db.getUserStats(chatId)?.points || 0} points\n\n💡 <i>Share your referral link to earn more points!</i>`, { parse_mode: 'HTML', ...mainMenuKeyboard });
@@ -504,7 +504,7 @@ function initTelegram() {
             const chatId = query.message.chat.id.toString();
             // Ignore callback queries from old messages
             if (query.message && query.message.date < startTime) {
-                bot.answerCallbackQuery(query.id, { text: "⚠️ This message has expired, please make a new request." }).catch(() => {});
+                bot.answerCallbackQuery(query.id, { text: "⚠️ This message has expired, please make a new request." }).catch(() => { });
                 return;
             }
 
@@ -517,8 +517,8 @@ function initTelegram() {
 
             // User Settings Edit Menu
             if (data === 'edit_password') {
-                bot.answerCallbackQuery(query.id).catch(() => {});
-                bot.deleteMessage(chatId, query.message.message_id).catch(()=>{});
+                bot.answerCallbackQuery(query.id).catch(() => { });
+                bot.deleteMessage(chatId, query.message.message_id).catch(() => { });
                 bot.sendMessage(chatId,
                     `🔑 <b>Account Password Mode</b>\n━━━━━━━━━━━━━━━━━━\n` +
                     `Choose how account passwords are created:\n\n` +
@@ -539,18 +539,18 @@ function initTelegram() {
             }
 
             if (data === 'set_pass_random') {
-                bot.answerCallbackQuery(query.id).catch(() => {});
-                bot.deleteMessage(chatId, query.message.message_id).catch(()=>{});
+                bot.answerCallbackQuery(query.id).catch(() => { });
+                bot.deleteMessage(chatId, query.message.message_id).catch(() => { });
                 db.saveUser(chatId, { passwordMode: 'random' });
                 bot.sendMessage(chatId, "✅ <b>Password Mode: Auto (Random)</b>\nSystem will generate a unique password each time.", { parse_mode: 'HTML', ...mainMenuKeyboard });
                 return;
             }
 
             if (data === 'set_pass_static') {
-                bot.answerCallbackQuery(query.id).catch(() => {});
-                bot.deleteMessage(chatId, query.message.message_id).catch(()=>{});
+                bot.answerCallbackQuery(query.id).catch(() => { });
+                bot.deleteMessage(chatId, query.message.message_id).catch(() => { });
                 db.saveUser(chatId, { passwordMode: 'static' });
-                
+
                 // Langsung tanya password yang ingin dipakai
                 let isValid = false;
                 while (!isValid) {
@@ -569,16 +569,16 @@ function initTelegram() {
                 }
                 return;
             }
-            
+
             if (data === 'cancel_process') {
-                bot.answerCallbackQuery(query.id, { text: "🛑 Cancelling your task..." }).catch(() => {});
+                bot.answerCallbackQuery(query.id, { text: "🛑 Cancelling your task..." }).catch(() => { });
                 const state = getUserState(chatId);
                 // Signal the running task to stop via cancellation token
                 workerPool.cancelTokenForUser(chatId);
                 // Remove pending queue items and release the pool slot
                 workerPool.cancelUserQueue(chatId);
                 workerPool.cancelUserActiveToken(chatId);
-                
+
                 // Reset batch mode if applicable
                 state.isBatchMode = false;
                 state.batchResults = [];
@@ -592,7 +592,7 @@ function initTelegram() {
                         message_id: state.lastStatusMessageId,
                         parse_mode: 'HTML',
                         reply_markup: { inline_keyboard: [] }
-                    }).catch(() => {});
+                    }).catch(() => { });
                 }
                 if (state.activePromptResolve) {
                     const resolve = state.activePromptResolve;
@@ -603,9 +603,9 @@ function initTelegram() {
                 bot.sendMessage(chatId, "✅ Task successfully cancelled.", mainMenuKeyboard);
                 return;
             }
-            
+
             if (data === 'show_main_menu') {
-                bot.answerCallbackQuery(query.id).catch(() => {});
+                bot.answerCallbackQuery(query.id).catch(() => { });
                 const welcomeText = `🤖 <b>GPT CREATOR BOT</b>\n━━━━━━━━━━━━━━━━━━\nWelcome back to the automation service.\n\nPlease choose an option below:`;
                 bot.sendMessage(chatId, welcomeText, { parse_mode: 'HTML', ...mainMenuKeyboard });
                 return;
@@ -616,8 +616,8 @@ function initTelegram() {
 
                 const mailProvider = data === 'fullpro_luckmail' ? 'luckmail' : data === 'fullpro_luckynew' ? 'luckynew' : 'tmail';
                 const providerName = mailProvider === 'luckmail' ? '🍀 LuckMail' : mailProvider === 'luckynew' ? '🔥 Lucky New' : '📬 T-Mail';
-                bot.answerCallbackQuery(query.id).catch(() => {});
-                bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
+                bot.answerCallbackQuery(query.id).catch(() => { });
+                bot.deleteMessage(chatId, query.message.message_id).catch(() => { });
 
                 if (workerPool.isUserBusy && workerPool.isUserBusy(chatId)) {
                     bot.sendMessage(chatId, "⚠️ <b>You still have a running task.</b>\nWait for it to complete or cancel first.", { parse_mode: 'HTML', ...mainMenuKeyboard });
@@ -625,7 +625,7 @@ function initTelegram() {
                 }
 
                 const uData = db.getUser(chatId);
-                
+
                 // Extra checks for Mail Providers
                 if (mailProvider === 'luckmail' && !uData.luckMailApiKey) {
                     bot.sendMessage(chatId, "❌ <b>LuckMail API Key not set.</b>\nGo to ⚙️ My Settings to add your key first.", { parse_mode: "HTML", ...mainMenuKeyboard });
@@ -667,24 +667,24 @@ function initTelegram() {
                 workerPool.enqueueBatch(batchTasks);
 
                 const batchInitText = `📊 <b>FULL AUTO PLUS (${providerName})</b>\n` +
-                                      `━━━━━━━━━━━━━━━━━━\n` +
-                                      `✅ Plus accounts created: <b>0 / ${amount}</b>\n` +
-                                      `📦 Total tasks: <b>0</b>\n` +
-                                      `<i>Starting batch...</i>`;
+                    `━━━━━━━━━━━━━━━━━━\n` +
+                    `✅ Plus accounts created: <b>0 / ${amount}</b>\n` +
+                    `📦 Total tasks: <b>0</b>\n` +
+                    `<i>Starting batch...</i>`;
                 const reply_markup = { inline_keyboard: [[{ text: "🛑 Cancel Batch", callback_data: "cancel_process" }]] };
                 bot.sendMessage(chatId, batchInitText, { parse_mode: 'HTML', reply_markup }).then(sent => {
                     if (sent) {
                         state.lastStatusMessageId = sent.message_id;
                         state.dashboardObscured = false;
                     }
-                }).catch(() => {});
+                }).catch(() => { });
                 return;
             }
 
             // Edit T-Mail URL
             if (data === 'edit_tmail_url') {
-                bot.answerCallbackQuery(query.id).catch(() => {});
-                bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
+                bot.answerCallbackQuery(query.id).catch(() => { });
+                bot.deleteMessage(chatId, query.message.message_id).catch(() => { });
                 const inputUrl = await askTelegramUser(chatId,
                     `🌐 Enter new <b>T-Mail Base URL</b>:\n<i>(example: https://mail.zyvenox.my.id)</i>\n<i>Send "-" to reset to default</i>`);
                 if (!inputUrl) return;
@@ -702,8 +702,8 @@ function initTelegram() {
             }
 
             if (data === 'edit_tmail_key') {
-                bot.answerCallbackQuery(query.id).catch(() => {});
-                bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
+                bot.answerCallbackQuery(query.id).catch(() => { });
+                bot.deleteMessage(chatId, query.message.message_id).catch(() => { });
                 const key = await askTelegramUser(chatId, `🔑 Enter your <b>T-Mail API Key</b>:\n<i>Send "-" to remove</i>`);
                 if (!key) return;
                 if (key.trim() === '-') {
@@ -717,8 +717,8 @@ function initTelegram() {
             }
 
             if (data === 'edit_luckmail_key') {
-                bot.answerCallbackQuery(query.id).catch(() => {});
-                bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
+                bot.answerCallbackQuery(query.id).catch(() => { });
+                bot.deleteMessage(chatId, query.message.message_id).catch(() => { });
                 let isValid = false;
                 while (!isValid) {
                     const key = await askTelegramUser(chatId, `🍀 Enter your <b>LuckMail API Key</b>:\n<i>Send "-" to remove</i>`);
@@ -739,8 +739,8 @@ function initTelegram() {
             }
 
             if (data === 'edit_luckynew_key') {
-                bot.answerCallbackQuery(query.id).catch(() => {});
-                bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
+                bot.answerCallbackQuery(query.id).catch(() => { });
+                bot.deleteMessage(chatId, query.message.message_id).catch(() => { });
                 const key = await askTelegramUser(chatId, `🔥 Enter your <b>Lucky New API Key</b>:\n<i>Send "-" to remove</i>`);
                 if (!key) return;
                 if (key.trim() === '-') {
@@ -754,8 +754,8 @@ function initTelegram() {
             }
 
             if (data === 'edit_luckmail_domains') {
-                bot.answerCallbackQuery(query.id).catch(() => {});
-                bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
+                bot.answerCallbackQuery(query.id).catch(() => { });
+                bot.deleteMessage(chatId, query.message.message_id).catch(() => { });
                 const doms = await askTelegramUser(chatId, `🌐 Enter your preferred <b>LuckMail Domains</b> (comma separated):\n<i>Example: outlook.com, outlook.jp</i>`);
                 if (!doms) return;
                 const clean = doms.split(',').map(d => d.trim().toLowerCase()).filter(Boolean).join(', ');
@@ -765,8 +765,8 @@ function initTelegram() {
             }
 
             if (data === 'edit_tmail_domains') {
-                bot.answerCallbackQuery(query.id).catch(() => {});
-                bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
+                bot.answerCallbackQuery(query.id).catch(() => { });
+                bot.deleteMessage(chatId, query.message.message_id).catch(() => { });
                 const doms = await askTelegramUser(chatId,
                     `🌐 Enter preferred <b>T-Mail Domains</b> (comma separated):\n<i>Example: domain1.com, domain2.com</i>\n<i>Send "-" to reset ke auto round-robin</i>`);
                 if (!doms) return;
@@ -784,8 +784,8 @@ function initTelegram() {
             // Retry Autopay
             if (data.startsWith('mode_retrypay_')) {
                 const email = data.replace('mode_retrypay_', '');
-                bot.answerCallbackQuery(query.id).catch(() => {});
-                bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
+                bot.answerCallbackQuery(query.id).catch(() => { });
+                bot.deleteMessage(chatId, query.message.message_id).catch(() => { });
 
                 if (workerPool.isUserActive(chatId)) {
                     bot.sendMessage(chatId, "❌ A task is already running. Only 1 slot per user.");
@@ -813,8 +813,8 @@ function initTelegram() {
 
             // Edit Report Format
             if (data === 'edit_report_format') {
-                bot.answerCallbackQuery(query.id).catch(() => {});
-                bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
+                bot.answerCallbackQuery(query.id).catch(() => { });
+                bot.deleteMessage(chatId, query.message.message_id).catch(() => { });
                 bot.sendMessage(chatId,
                     `📋 <b>Account Report Format</b>\n━━━━━━━━━━━━━━━━━━\n` +
                     `Choose the TXT file format the bot will send:\n\n` +
@@ -835,22 +835,22 @@ function initTelegram() {
             }
 
             if (data === 'set_format_tokens') {
-                bot.answerCallbackQuery(query.id).catch(() => {});
-                bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
+                bot.answerCallbackQuery(query.id).catch(() => { });
+                bot.deleteMessage(chatId, query.message.message_id).catch(() => { });
                 db.saveUser(chatId, { reportFormat: 'with_tokens' });
                 bot.sendMessage(chatId, "✅ <b>Report Format: Email + Token</b>", { parse_mode: 'HTML', ...mainMenuKeyboard });
                 return;
             }
 
             if (data === 'set_format_email_pw') {
-                bot.answerCallbackQuery(query.id).catch(() => {});
-                bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
+                bot.answerCallbackQuery(query.id).catch(() => { });
+                bot.deleteMessage(chatId, query.message.message_id).catch(() => { });
                 db.saveUser(chatId, { reportFormat: 'email_pw' });
                 bot.sendMessage(chatId, "✅ <b>Report Format: Email:Password:Token</b>", { parse_mode: 'HTML', ...mainMenuKeyboard });
                 return;
             }
 
-            bot.answerCallbackQuery(query.id).catch(() => {});
+            bot.answerCallbackQuery(query.id).catch(() => { });
         });
 
     } catch (error) {
@@ -860,10 +860,10 @@ function initTelegram() {
 
 function sendSettingsMenu(chatId, userData) {
     const modeLabel = userData.passwordMode === 'random' ? '🔄 Auto (Random)'
-                    : userData.passwordMode === 'static' ? '🔑 Manual (Static)'
-                    : '⚠️ Not set';
+        : userData.passwordMode === 'static' ? '🔑 Manual (Static)'
+            : '⚠️ Not set';
     const formatLabel = userData.reportFormat === 'email_pw' ? '📧 Email:Password:Token'
-                      : '🔑 Email + Token (Default)';
+        : '🔑 Email + Token (Default)';
     const tmailUrl = userData.tmailBaseUrl || 'https://mail.zyvenox.my.id (default)';
     const tmailKey = userData.tmailApiKey ? '✅ Set' : '⚠️ Not set';
     const tmailDomains = userData.tmailDomains || '🔀 Auto Round-Robin (all domains)';
@@ -872,15 +872,15 @@ function sendSettingsMenu(chatId, userData) {
     const luckyNewKey = userData.luckyNewApiKey ? '✅ Set' : '⚠️ Not set';
 
     const text = `⚙️ <b>MY SETTINGS</b>\n━━━━━━━━━━━━━━━━━━\n` +
-                 `🔑 <b>Password Mode    :</b> <code>${modeLabel}</code>\n` +
-                 `📋 <b>Report Format    :</b> <code>${formatLabel}</code>\n\n` +
-                 `🍀 <b>LuckMail Key     :</b> <code>${luckKey}</code>\n` +
-                 `🌐 <b>LuckMail Domains :</b> <code>${luckDomains}</code>\n\n` +
-                 `🔥 <b>Lucky New Key    :</b> <code>${luckyNewKey}</code>\n\n` +
-                 `📬 <b>T-Mail Base URL  :</b> <code>${tmailUrl}</code>\n` +
-                 `🔑 <b>T-Mail Key       :</b> <code>${tmailKey}</code>\n` +
-                 `🌐 <b>T-Mail Domains   :</b> <code>${tmailDomains}</code>\n\n` +
-                 `<i>Select an option below to change:</i>`;
+        `🔑 <b>Password Mode    :</b> <code>${modeLabel}</code>\n` +
+        `📋 <b>Report Format    :</b> <code>${formatLabel}</code>\n\n` +
+        `🍀 <b>LuckMail Key     :</b> <code>${luckKey}</code>\n` +
+        `🌐 <b>LuckMail Domains :</b> <code>${luckDomains}</code>\n\n` +
+        `🔥 <b>Lucky New Key    :</b> <code>${luckyNewKey}</code>\n\n` +
+        `📬 <b>T-Mail Base URL  :</b> <code>${tmailUrl}</code>\n` +
+        `🔑 <b>T-Mail Key       :</b> <code>${tmailKey}</code>\n` +
+        `🌐 <b>T-Mail Domains   :</b> <code>${tmailDomains}</code>\n\n` +
+        `<i>Select an option below to change:</i>`;
 
     bot.sendMessage(chatId, text, {
         parse_mode: 'HTML',
@@ -917,7 +917,7 @@ async function askTelegramUser(chatId, question, logTag = "") {
         }).then(sent => {
             state.lastPromptMessageId = sent.message_id;
             state.dashboardObscured = true;
-        }).catch(()=>{});
+        }).catch(() => { });
         state.activePromptResolve = resolve;
     });
 }
@@ -968,7 +968,7 @@ async function sendAccountJsonFile(chatId, results) {
         // Simpan ke folder reports/ agar tidak hilang
         const uData = db.getUser(chatId);
         const reportFormat = (uData && uData.reportFormat) || 'with_tokens';
-        
+
         const txtFileName = `${plusCount}_plus_at_${ts}.txt`;
         const txtFilePath = path.join(REPORTS_DIR, txtFileName);
         const txtContent = Object.values(formattedData)
@@ -994,7 +994,7 @@ async function sendAccountJsonFile(chatId, results) {
         logger.info(`[Bot] File TXT akun berhasil dikirim ke ${chatId} (${plusCount} akun Plus) → ${txtFileName}`);
     } catch (err) {
         logger.error('[Bot] Gagal kirim file akun: ' + err.message);
-        bot.sendMessage(chatId, '⚠️ Failed to send report file.').catch(() => {});
+        bot.sendMessage(chatId, '⚠️ Failed to send report file.').catch(() => { });
     }
 }
 
@@ -1029,8 +1029,6 @@ function handleTaskResult(chatId, result) {
                 const mailProvider = result.mailProvider || 'luckmail';
                 workerPool.enqueueTask({ userId: chatId, chatId, email: '', mode: 'auto_autopay', mailProvider });
             } else if (state.batchPlusCount < state.batchTarget && replacementsSoFar >= maxReplacements) {
-                // Hit the retry cap — do not force finish yet! Let the remaining running tasks finish naturally.
-                // Output a warning so we know the cap is reached.
                 logger.warn(`[Bot] Batch retry cap reached. No more replacements will be queued.`);
             }
         }
@@ -1050,10 +1048,10 @@ function handleTaskResult(chatId, result) {
 
         // Update dashboard sederhana: cuma counter akun Plus
         const batchText = `📊 <b>BATCH MODE</b>\n` +
-                          `━━━━━━━━━━━━━━━━━━\n` +
-                          `✅ Plus accounts created: <b>${state.batchPlusCount} / ${state.batchTarget}</b>\n` +
-                          `📦 Total tasks: <b>${state.batchResults.length} / ${state.batchTotalDispatched}</b>\n` +
-                          `<i>Running...</i>`;
+            `━━━━━━━━━━━━━━━━━━\n` +
+            `✅ Plus accounts created: <b>${state.batchPlusCount} / ${state.batchTarget}</b>\n` +
+            `📦 Total tasks: <b>${state.batchResults.length} / ${state.batchTotalDispatched}</b>\n` +
+            `<i>Running...</i>`;
 
         // Kirim langsung tanpa melalui filter batch di updateStatusFor
         if (bot) {
@@ -1074,7 +1072,7 @@ function handleTaskResult(chatId, result) {
             } else {
                 bot.sendMessage(chatId, batchText, { parse_mode: 'HTML', reply_markup }).then(sent => {
                     if (sent) batchState.lastStatusMessageId = sent.message_id;
-                }).catch(() => {});
+                }).catch(() => { });
             }
         }
 
@@ -1092,36 +1090,36 @@ function handleTaskResult(chatId, result) {
 async function checkAndSendBatchReport(chatId) {
     const state = getUserState(chatId);
     if (!state.isBatchMode) return;
-    
+
     // Batch BENAR-BENAR SELESAI hanya jika semua task yang didispatch sudah mengembalikan hasil
     const isFinished = state.batchResults.length >= state.batchTotalDispatched;
     if (!isFinished) return;
 
     // Ambil data hasil dan segera reset state agar tidak kepanggil dobel
-        const results = [...state.batchResults];
-        const successCount = state.batchPlusCount;
-        const totalDispatched = state.batchTotalDispatched;
-        const failCount = totalDispatched - successCount;
+    const results = [...state.batchResults];
+    const successCount = state.batchPlusCount;
+    const totalDispatched = state.batchTotalDispatched;
+    const failCount = totalDispatched - successCount;
 
-        state.isBatchMode = false;
-        state.batchResults = [];
-        state.batchTarget = 0;
-        state.batchPlusCount = 0;
-        state.batchTotalDispatched = 0;
-        clearBatchProgress(chatId); // Bersihkan file progress setelah batch selesai
+    state.isBatchMode = false;
+    state.batchResults = [];
+    state.batchTarget = 0;
+    state.batchPlusCount = 0;
+    state.batchTotalDispatched = 0;
+    clearBatchProgress(chatId); // Bersihkan file progress setelah batch selesai
 
-        // Kirim ringkasan batch
-        const summaryMsg = `📊 <b>BATCH COMPLETED</b>\n` +
-                         `━━━━━━━━━━━━━━━━━━\n` +
-                         `✅ Plus      : <b>${successCount} accounts</b>\n` +
-                         `❌ Failed    : <b>${failCount} attempts</b>\n` +
-                         `📦 Total     : <b>${totalDispatched} tasks run</b>\n\n` +
-                         `<i>Preparing report for ${successCount} Plus accounts...</i>`;
-        
-        bot.sendMessage(chatId, summaryMsg, { parse_mode: 'HTML' });
+    // Kirim ringkasan batch
+    const summaryMsg = `📊 <b>BATCH COMPLETED</b>\n` +
+        `━━━━━━━━━━━━━━━━━━\n` +
+        `✅ Plus      : <b>${successCount} accounts</b>\n` +
+        `❌ Failed    : <b>${failCount} attempts</b>\n` +
+        `📦 Total     : <b>${totalDispatched} tasks run</b>\n\n` +
+        `<i>Preparing report for ${successCount} Plus accounts...</i>`;
 
-        // Beri jeda sedikit agar dashboard status FINISHED terkirim duluan
-        setTimeout(() => sendAccountJsonFile(chatId, results), 2500);
+    bot.sendMessage(chatId, summaryMsg, { parse_mode: 'HTML' });
+
+    // Beri jeda sedikit agar dashboard status FINISHED terkirim duluan
+    setTimeout(() => sendAccountJsonFile(chatId, results), 2500);
 }
 
 // Global legacy fallback mapping
@@ -1139,12 +1137,12 @@ async function checkAndSendBatchReport(chatId) {
 async function askTelegram(question, logTag = "", overrideChatId = null) {
     const chatIdLocal = asyncLocalStorage.getStore();
     const targetChatId = overrideChatId || chatIdLocal;
-    
+
     if (targetChatId) {
         return askTelegramUser(targetChatId.toString(), question, logTag);
     }
-    
-    throw new Error("askTelegram requires overrideChatId or async_hooks context in multi-user mode!"); 
+
+    throw new Error("askTelegram requires overrideChatId or async_hooks context in multi-user mode!");
 }
 
 
@@ -1155,7 +1153,7 @@ async function processUserMessageQueue(chatId) {
 
     while (state.messageQueue.length > 0) {
         let latestEntry = state.messageQueue.shift();
-        
+
         while (state.messageQueue.length > 0) {
             if (state.messageQueue[0].accountInfo) {
                 latestEntry.accountInfo = state.messageQueue[0].accountInfo;
@@ -1167,7 +1165,7 @@ async function processUserMessageQueue(chatId) {
         }
 
         const { text, accountInfo, isQueued } = latestEntry;
-        
+
         try {
             if (accountInfo) state.currentTaskInfo = accountInfo;
 
@@ -1185,14 +1183,14 @@ async function processUserMessageQueue(chatId) {
                 else if (mode === 'signup') modeName = '📝 SIGNUP ONLY';
                 else if (mode === 'failed_autopay') modeName = '❌ AUTOPAY FAILED';
                 else if (mode === 'retry_autopay') modeName = '💳 RETRY PAY';
-                
+
                 header = `🖥️ <b>SYSTEM DASHBOARD</b>\n` +
-                         `━━━━━━━━━━━━━━━━━━\n` +
-                         `👤 NAME  : <code>${name || 'ZYVENOX-GEN'}</code>\n` +
-                         `📧 EMAIL : <code>${email}</code>\n` +
-                         `💎 MODE  : <b>${modeName}</b>\n` +
-                         `━━━━━━━━━━━━━━━━━━\n\n`;
-                
+                    `━━━━━━━━━━━━━━━━━━\n` +
+                    `👤 NAME  : <code>${name || 'ZYVENOX-GEN'}</code>\n` +
+                    `📧 EMAIL : <code>${email}</code>\n` +
+                    `💎 MODE  : <b>${modeName}</b>\n` +
+                    `━━━━━━━━━━━━━━━━━━\n\n`;
+
                 if (isWorkerRunning || isQueued) {
                     reply_markup.inline_keyboard = [[{ text: "🛑 Cancel This Session", callback_data: "cancel_process" }]];
                 } else if (mode === 'failed_autopay') {
@@ -1203,11 +1201,11 @@ async function processUserMessageQueue(chatId) {
                 }
             } else {
                 header = `🖥️ <b>SYSTEM DASHBOARD (IDLE)</b>\n` +
-                         `━━━━━━━━━━━━━━━━━━\n` +
-                         `<i>Ready to accept new tasks...</i>\n\n`;
+                    `━━━━━━━━━━━━━━━━━━\n` +
+                    `<i>Ready to accept new tasks...</i>\n\n`;
                 reply_markup.inline_keyboard = [[{ text: "📋 Show Main Menu", callback_data: "show_main_menu" }]];
             }
-            
+
             let engineStatus = "";
             if (isWorkerRunning) {
                 engineStatus = "ACTIVE • PROCESSING 🚀";
@@ -1226,7 +1224,7 @@ async function processUserMessageQueue(chatId) {
             const fullText = header + text + footer;
 
             if (state.lastStatusMessageId && state.dashboardObscured) {
-                bot.deleteMessage(chatId, state.lastStatusMessageId).catch(() => {});
+                bot.deleteMessage(chatId, state.lastStatusMessageId).catch(() => { });
                 state.lastStatusMessageId = null;
             }
 
@@ -1267,7 +1265,7 @@ async function processUserMessageQueue(chatId) {
 
         try {
             await new Promise(resolve => setTimeout(resolve, 500));
-        } catch (e) {}
+        } catch (e) { }
     }
 
     state.isQueueProcessing = false;
@@ -1288,7 +1286,7 @@ function recoverPendingBatchReports() {
                 logger.info(`[Recovery] Ditemukan ${results.length} akun dari batch yang belum dikirim ke ${chatId}. Mengirim sekarang...`);
                 sendAccountJsonFile(chatId, results).then(() => {
                     clearBatchProgress(chatId);
-                    bot.sendMessage(chatId, `🔄 <b>RECOVERY</b>\nBot baru saja restart. Ditemukan ${results.length} akun Plus dari batch sebelumnya yang belum dikirim. File sudah dikirim ulang di atas.`, { parse_mode: 'HTML', ...mainMenuKeyboard }).catch(() => {});
+                    bot.sendMessage(chatId, `🔄 <b>RECOVERY</b>\nBot baru saja restart. Ditemukan ${results.length} akun Plus dari batch sebelumnya yang belum dikirim. File sudah dikirim ulang di atas.`, { parse_mode: 'HTML', ...mainMenuKeyboard }).catch(() => { });
                 }).catch(err => {
                     logger.error(`[Recovery] Gagal kirim recovery batch untuk ${chatId}: ${err.message}`);
                 });
