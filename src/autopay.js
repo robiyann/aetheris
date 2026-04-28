@@ -1948,7 +1948,7 @@ class ChatGPTAutopay {
         return b.data;
       }
       if (c === "pending" || !c) {
-        await sleep(0x1388); // 5 detik
+        await sleep(0x1388);
         continue;
       }
       if (c === "deny" || c === "cancel" || c === "expire" || c === "failure") {
@@ -1999,12 +1999,6 @@ class ChatGPTAutopay {
         if (!this._cycleTLS) {
           this._cycleTLS = this.sharedCycleTLS || (await initCycleTLS());
           this._oaiJar = new LoginCookieJar();
-        }
-        // Validasi access token sebelum lanjut.
-        // Jika token sudah expired, lakukan login ulang untuk mendapatkan token baru.
-        if (!this.accessToken) {
-          logger.warn(this.tag + "Access token kosong, melakukan login ulang...");
-          await this.loginToChatGPT();
         }
       }
       logger.info(this.tag + "Info harga...");
